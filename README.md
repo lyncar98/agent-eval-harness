@@ -35,7 +35,7 @@ Full background: [*Everyone Is Building AI Agents. Almost Nobody Is Evaluating T
 ## Quick start
 
 ```bash
-git clone https://github.com/lyndon-carlson/agent-eval-harness.git
+git clone https://github.com/lyncar98/agent-eval-harness.git
 cd agent-eval-harness
 pip install -e .
 
@@ -43,7 +43,19 @@ pip install -e .
 python -m agent_eval.examples.quickstart
 ```
 
-You'll see a run summary reporting `pass@1`, `pass@k`, and `pass^k` for each case, plus per-grader scores and reasons.
+You'll see a run summary reporting `pass@1`, `pass@k`, and `pass^k` for each case, plus per-grader scores and reasons. Note that `pass^k` lands *below* the release gate — that's the point: the adversarial case passes 2 of 3 trials (clears the integer gate) but isn't stable enough to trust every time.
+
+### Optional: score against a live Claude judge
+
+The model graders run at temperature 0 against a deterministic stub judge by default, so CI is reproducible and key-free. To score against a real Anthropic model instead:
+
+```bash
+pip install -e ".[anthropic]"
+echo 'claude_api_key=sk-ant-...' > .env      # git-ignored; never commit keys
+python -m agent_eval.examples.quickstart --judge anthropic
+```
+
+A key is read from `ANTHROPIC_API_KEY` / `CLAUDE_API_KEY` in the environment or a local `.env`. If neither the package nor a key is present, the harness transparently falls back to the stub judge.
 
 ## A 60-second example
 
@@ -99,13 +111,21 @@ Governance you can't query is governance you don't have. The cascade lives in da
 agent-eval-harness/
 ├─ src/agent_eval/
 │  ├─ context.py        # GraderContext dataclass
-│  ├─ graders/          # code, model, and human grader families
-│  ├─ registry.py       # uniform grader lookup
-│  ├─ suite.py          # suite definition + run config
-│  ├─ runner.py         # k-trial execution, pass@k / pass^k rollup
-│  ├─ cascade.py        # org → project → agent resolution
-│  └─ examples/         # runnable quickstart
-├─ tests/
+│  ├─ graders/          # code, model, and human grader families (15 graders)
+│  ├─ judges.py         # Judge protocol, deterministic stub + live Anthropic judge
+│  ├─ registry.py       # uniform grader lookup by name (for YAML / online)
+│  ├─ suite.py          # suite + case definition, YAML loader
+│  ├─ runner.py         # k-trial execution, pass@1 / pass@k / pass^k, integer gate, N/A rollup
+│  ├─ cascade.py        # org → project → agent resolution + justification rule
+│  ├─ sampling.py       # deterministic, idempotent online sampling
+│  ├─ online.py         # online consumer: same suites, judge-free 8-grader subset
+│  ├─ slo.py            # burn signal + self-opening incident decision
+│  ├─ calibration.py    # grader-trust aggregation + trust bands
+│  ├─ release.py        # immutable release bundles + Release Decision Records
+│  └─ examples/         # runnable quickstart + scripted, API-free agent
+├─ schema/              # Postgres DDL: cascade, bundles, eval runs, calibration, online + SLO
+├─ suites/              # runnable example suites (hallucination guard, accuracy, safety)
+├─ tests/               # pytest, fully offline
 ├─ docs/
 │  ├─ graders.md
 │  ├─ cascade.md
@@ -115,6 +135,8 @@ agent-eval-harness/
 ├─ SECURITY.md
 └─ README.md
 ```
+
+Beyond the core grader/runner/cascade, the harness includes the rest of the production loop from the article: **online eval** (`sampling.py`, `online.py`) runs the same suite definitions through a deterministic, judge-free subset on sampled live turns; **SLOs** (`slo.py`) turn quality and safety signals into self-opening incidents; **calibration** (`calibration.py`) tracks per-grader agreement with humans so an untrusted judge can't gate; and **release** (`release.py`) pins immutable bundles behind no-self-approval decision records. The `schema/` directory is the SQL mirror of all of it.
 
 ## Design decisions
 

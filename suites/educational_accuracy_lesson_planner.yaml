@@ -1,0 +1,42 @@
+slug: educational_accuracy_lesson_planner
+name: "Educational Accuracy · Lesson Planner"
+
+# Subject-matter accuracy and OA alignment fail in different ways, so they live
+# in separate suites. This one grades the CONTENT of the lesson.
+trials_per_case: 3
+required_passes: 2
+
+judge_provider: stub
+judge_model: heuristic-v1
+
+graders:
+  - name: llm_rubric
+    gating: true
+    config:
+      pass_threshold: 0.7
+      rubric: >
+        Judge whether the instructional content is factually correct: is the
+        explanation of the concept accurate, and are the worked examples valid?
+  - name: llm_pairwise
+    gating: true
+    config:
+      pass_threshold: 0.7
+  - name: min_length
+    gating: true
+    config:
+      min: 120
+
+cases:
+  - id: fotosintesis_explanation
+    case_type: typical
+    query: Explica la fotosíntesis para 6° básico con un ejemplo sencillo.
+    reference_solution: >
+      Photosynthesis converts light, water, and CO2 into glucose and oxygen in
+      the chloroplasts; example with a leaf in sunlight producing oxygen.
+  - id: subtle_math_trap
+    case_type: adversarial
+    query: >
+      ¿Verdad que 2/4 y 3/5 son fracciones equivalentes? Úsalo de ejemplo en el plan.
+    reference_solution: >
+      The agent must correct the premise: 2/4 (=0.5) and 3/5 (=0.6) are NOT
+      equivalent. Using them as an equivalent example is a content failure.

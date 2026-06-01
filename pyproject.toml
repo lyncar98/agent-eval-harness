@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-eval-harness"
+version = "0.1.0"
+description = "Production-grade evaluation for LLM agents: grader registry, pass@1/pass@k/pass^k, calibrated judges, and an org -> project -> agent standards cascade."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Lyndon Carlson" }]
+keywords = ["llm", "agents", "evaluation", "observability", "governance", "slo", "pass@k"]
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=0.39"]
+dev = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/lyncar98/agent-eval-harness"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

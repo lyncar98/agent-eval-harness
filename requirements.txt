@@ -1,0 +1,4 @@
+pyyaml>=6.0
+pytest>=7.4
+# Optional: only needed to run model graders against a live Anthropic judge.
+# anthropic>=0.39
